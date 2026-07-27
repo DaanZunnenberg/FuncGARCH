@@ -1,11 +1,18 @@
-"""Functional GARCH model — Bernstein-basis parametrisation.
+"""Functional GARCH models — Bernstein-basis and B-spline-basis parametrisations.
 
 Implements the complete estimation and filtering pipeline for the functional
 GARCH(1,1) model.  The conditional variance curve σ²_t(·) is approximated in
-the M-dimensional Bernstein polynomial basis and evolved through an
-operator-valued GARCH recursion:
+a functional basis and evolved through an operator-valued GARCH recursion:
 
     σ²_t(u) = δ(u) + ∫α(u,s) r²_{t-1}(s) ds + ∫β(u,s) σ²_{t-1}(s) ds
+
+Two parametrisations are provided:
+
+``garch_estimator`` / ``garch_filter`` / ``fit``
+    Bernstein polynomial basis (see ``basis.bernstein_basis``).
+
+``bspline_garch_estimator``
+    B-spline basis (see ``basis.cubic_bspline_basis``); no ``fit()`` wrapper.
 
 Call chain
 ──────────
@@ -45,6 +52,17 @@ def _log_step(loss: float, params: np.ndarray, log_every: int = 500) -> None:
     if _call_count[0] % log_every == 0:
         vals = ' '.join(f'{100 * p:+.2f}' for p in params)
         print(f'step {_call_count[0]:>5} | loss: {loss:.6f} | params: {vals}')
+
+
+_bspline_call_count: list[int] = [0]
+
+
+def _log_bspline_step(loss: float, log_every: int = 1) -> None:
+    """Print a convergence update for the B-spline GARCH estimator."""
+    if _bspline_call_count[0] % log_every == 0:
+        msg = f'Running GARCH estimator :: call #{_bspline_call_count[0]:<5} :: loss: {loss:.6f}'
+        print(msg.ljust(len(msg) + 30, ' '), end='\r')
+    _bspline_call_count[0] += 1
 
 
 @njit
@@ -302,6 +320,61 @@ def fit(
         _call_count[0] = 0
 
     return ResultContainer(**{k: opt[k] for k in opt.__dir__()})
+
+
+def bspline_garch_estimator(
+    returns: np.ndarray,
+    basis_mat: np.ndarray,
+    params: np.ndarray,
+    p: int = 1,
+    q: int = 1,
+) -> tuple[float, np.ndarray]:
+    """Functional GARCH estimator using B-spline basis projections.
+
+    Implements the functional GARCH(1,1) recursion in the B-spline coefficient
+    space:
+        sigma²_t = B^T delta + (B^T A B) * y²_{t-1} + sigma²_{t-1} (B^T C B)
+
+    Args:
+        returns: Return matrix, shape (n_grid, n_days).
+        basis_mat: B-spline basis matrix, shape (n_basis, n_grid).
+        params: Parameter vector [delta_coefs (n_basis) | vec(alpha) (n_basis²) | vec(beta) (n_basis²)].
+        p: AR order (currently only p=1 supported).
+        q: MA order (currently only q=1 supported).
+
+    Returns:
+        Tuple of (MSE loss, fitted variance matrix of shape (n_grid, n_days)).
+    """
+    if max(p, q) > 1:
+        raise NotImplementedError('Order (p,q) must be (1,1)')
+
+    n_basis = basis_mat.shape[0]
+    n_grid, n_days = returns.shape
+
+    delta_coefs = np.array(params[:n_basis]).reshape(1, n_basis)
+    alpha_coefs = params[n_basis: n_basis + n_basis ** 2].reshape(n_basis, n_basis)
+    beta_coefs  = params[n_basis + n_basis ** 2:].reshape(n_basis, n_basis)
+
+    variance         = np.ones(n_grid)
+    variance_surface = np.zeros(returns.shape)
+    variance_surface[:, 0] = variance
+
+    delta_hat = delta_coefs @ basis_mat                      # (1, n_grid)
+    alpha_hat = basis_mat.T @ (alpha_coefs @ basis_mat)     # (n_grid, n_grid)
+    beta_hat  = basis_mat.T @ (beta_coefs  @ basis_mat)     # (n_grid, n_grid)
+
+    loss = 0.0
+    for t in range(1, n_days):
+        variance = np.asarray(
+            delta_hat
+            + (alpha_hat * returns[:, t - 1] ** 2) @ np.ones(n_grid) / n_grid
+            + (variance @ beta_hat) / n_grid
+        ).ravel()
+        variance_surface[:, t] = variance
+        loss += float(np.sum(((returns[:, t] ** 2 - variance) * basis_mat) ** 2))
+
+    _log_bspline_step(loss)
+    return loss, variance_surface
 
 
 if __name__ == '__main__':

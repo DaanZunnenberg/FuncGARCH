@@ -1,26 +1,21 @@
-"""Functional GAS-GARCH model — B-spline parametrisation.
+"""Functional GAS model — score-driven B-spline parametrisation.
 
-Provides two estimators for functional volatility models that parametrise the
-log-volatility curve with a B-spline basis Φ:
+Implements the functional GAS (Generalised Autoregressive Score) model, which
+parametrises the log-volatility curve with a B-spline basis Φ:
 
     log sigma_t(u) = Phi(u)^T b_t
 
-``gas_garch_estimator``
-    The full GAS model.  The coefficient vector b_t is updated at each day by
-    the scaled score of the multivariate Student-t log-likelihood:
+The coefficient vector b_t is updated at each day by the scaled score of the
+multivariate Student-t log-likelihood:
 
-        b_t = ω + B b_{t-1} + A s_{t-1}
+    b_t = ω + B b_{t-1} + A s_{t-1}
 
-    Returns the negative average log-likelihood and the fitted log-volatility
-    surface.
+``gas_estimator`` returns the negative average log-likelihood and the fitted
+log-volatility surface. It is called directly inside a ``scipy.optimize.minimize``
+loop. See ``scripts/`` for worked demonstrations.
 
-``func_garch_estimator``
-    A B-spline GARCH baseline (no score updating).  The variance is evolved
-    through the same GARCH(1,1) recursion as in ``garch.py``, but using
-    B-spline basis matrices instead of Bernstein polynomials.
-
-Both estimators are called directly inside a ``scipy.optimize.minimize`` loop.
-See ``scripts/`` for worked demonstrations.
+The B-spline GARCH baseline (no score updating) lives in ``garch.py`` as
+``bspline_garch_estimator``, alongside the Bernstein-basis GARCH model.
 """
 
 import warnings
@@ -28,7 +23,7 @@ import warnings
 import numpy as np
 from scipy.special import gammaln
 
-from .basis import cubic_bspline_basis, ou_kernel
+from .basis import ou_kernel
 
 warnings.filterwarnings(action='ignore')
 
@@ -43,7 +38,7 @@ def _log_step(model_name: str, loss: float, log_every: int = 1) -> None:
     _call_count[0] += 1
 
 
-def gas_garch_estimator(
+def gas_estimator(
     returns: np.ndarray,
     init_coefs: np.ndarray,
     basis_mat: np.ndarray,
@@ -120,58 +115,3 @@ def gas_garch_estimator(
     )
     _log_step('GAS estimator', -log_lik / n_days)
     return -log_lik / n_days, log_vol_surface
-
-
-def func_garch_estimator(
-    returns: np.ndarray,
-    basis_mat: np.ndarray,
-    params: np.ndarray,
-    p: int = 1,
-    q: int = 1,
-) -> tuple[float, np.ndarray]:
-    """Functional GARCH estimator using B-spline basis projections.
-
-    Implements the functional GARCH(1,1) recursion in the B-spline coefficient
-    space:
-        sigma²_t = B^T delta + (B^T A B) * y²_{t-1} + sigma²_{t-1} (B^T C B)
-
-    Args:
-        returns: Return matrix, shape (n_grid, n_days).
-        basis_mat: B-spline basis matrix, shape (n_basis, n_grid).
-        params: Parameter vector [delta_coefs (n_basis) | vec(alpha) (n_basis²) | vec(beta) (n_basis²)].
-        p: AR order (currently only p=1 supported).
-        q: MA order (currently only q=1 supported).
-
-    Returns:
-        Tuple of (MSE loss, fitted variance matrix of shape (n_grid, n_days)).
-    """
-    if max(p, q) > 1:
-        raise NotImplementedError('Order (p,q) must be (1,1)')
-
-    n_basis = basis_mat.shape[0]
-    n_grid, n_days = returns.shape
-
-    delta_coefs = np.array(params[:n_basis]).reshape(1, n_basis)
-    alpha_coefs = params[n_basis: n_basis + n_basis ** 2].reshape(n_basis, n_basis)
-    beta_coefs  = params[n_basis + n_basis ** 2:].reshape(n_basis, n_basis)
-
-    variance         = np.ones(n_grid)
-    variance_surface = np.zeros(returns.shape)
-    variance_surface[:, 0] = variance
-
-    delta_hat = delta_coefs @ basis_mat                      # (1, n_grid)
-    alpha_hat = basis_mat.T @ (alpha_coefs @ basis_mat)     # (n_grid, n_grid)
-    beta_hat  = basis_mat.T @ (beta_coefs  @ basis_mat)     # (n_grid, n_grid)
-
-    loss = 0.0
-    for t in range(1, n_days):
-        variance = np.asarray(
-            delta_hat
-            + (alpha_hat * returns[:, t - 1] ** 2) @ np.ones(n_grid) / n_grid
-            + (variance @ beta_hat) / n_grid
-        ).ravel()
-        variance_surface[:, t] = variance
-        loss += float(np.sum(((returns[:, t] ** 2 - variance) * basis_mat) ** 2))
-
-    _log_step('GARCH estimator', loss)
-    return loss, variance_surface

@@ -7,7 +7,7 @@ from scipy.optimize import minimize
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from funcgarch import cubic_bspline_basis, gas_garch_estimator, func_garch_estimator
+from funcgarch import cubic_bspline_basis, gas_estimator, bspline_garch_estimator
 
 # ── Simulated data ────────────────────────────────────────────────────────────
 dT = 1000
@@ -44,7 +44,7 @@ vtheta0_GAS = np.concatenate((
 LB_GAS = np.concatenate(([1.05, 0.00001], -5 * np.ones(M), -2 * np.ones(M ** 2), -0.9 * np.ones(M ** 2)))
 UB_GAS = np.concatenate(([500,  1],        15 * np.ones(M),  2 * np.ones(M ** 2),  0.9 * np.ones(M ** 2)))
 
-fGAS_likelihood = lambda vtheta: gas_garch_estimator(mY, vb0, mBsplinesSparseMat, vtheta)[0]
+fGAS_likelihood = lambda vtheta: gas_estimator(mY, vb0, mBsplinesSparseMat, vtheta)[0]
 optim_GAS = minimize(
     fGAS_likelihood, vtheta0_GAS,
     bounds=list(zip(LB_GAS, UB_GAS)),
@@ -54,7 +54,7 @@ optim_GAS = minimize(
 vthetaHat_GAS = optim_GAS.x
 print(optim_GAS)
 
-mVolatilityHat_GAS = gas_garch_estimator(mY, vb0, mBsplinesSparseMat, vthetaHat_GAS)[1]
+mVolatilityHat_GAS = gas_estimator(mY, vb0, mBsplinesSparseMat, vthetaHat_GAS)[1]
 mSigm_hat_GAS = np.exp(mVolatilityHat_GAS / 2)  # sigma (std dev)
 
 # ── GARCH estimation ──────────────────────────────────────────────────────────
@@ -65,7 +65,7 @@ vtheta0_GARCH = np.array(
     + (0.8 * np.eye(M).flatten()).tolist()
 )
 
-fGARCH_likelihood = lambda vtheta: func_garch_estimator(mY, mBsplinesSparseMat, vtheta)[0]
+fGARCH_likelihood = lambda vtheta: bspline_garch_estimator(mY, mBsplinesSparseMat, vtheta)[0]
 optim_GARCH = minimize(
     fGARCH_likelihood, vtheta0_GARCH,
     bounds=bnds_GARCH,
@@ -75,7 +75,7 @@ optim_GARCH = minimize(
 vthetaHat_GARCH = optim_GARCH.x
 print(optim_GARCH)
 
-mVolatilityHat_GARCH = func_garch_estimator(mY, mBsplinesSparseMat, vthetaHat_GARCH)[1]
+mVolatilityHat_GARCH = bspline_garch_estimator(mY, mBsplinesSparseMat, vthetaHat_GARCH)[1]
 mSigm_hat_GARCH = mVolatilityHat_GARCH ** 0.5  # sigma (std dev)
 
 # ── 3-D comparison: real vs GAS vs GARCH ─────────────────────────────────────

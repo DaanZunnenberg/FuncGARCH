@@ -106,15 +106,15 @@ vtheta_hat = result.x
 sigma2 = garch_filter(mY, n_grid=N, vtheta=vtheta_hat, M=M)  # (N, T) fitted variance surface
 ```
 
-### Functional GAS-GARCH
+### Functional GAS
 
 ```python
 from scipy.optimize import minimize
-from funcgarch import gas_garch_estimator
+from funcgarch import gas_estimator
 
 # vtheta = [nu, ou_scale, omega (M,), vec(B) (M*M,), vec(A) (M*M,)]
 result = minimize(
-    gas_garch_estimator, x0=vtheta_init, args=(mY, N, M),
+    gas_estimator, x0=vtheta_init, args=(mY, N, M),
     method="SLSQP",
 )
 ```
@@ -142,9 +142,9 @@ mY = cleaner.clean(parent_path="/path/to/taq/exports")  # -> (N, T) return matri
 wrds/*.sas                    scripts/taq_cleaner.py           funcgarch/*.py
 ┌────────────────┐            ┌───────────────────┐           ┌─────────────────────┐
 │ WRDS TAQ pull   │  raw CSV  │ DataCleaner.clean()│  mY (N,T) │ fit() / garch_filter │
-│ (data_fetcher,  │ ────────► │  - align to grid   │ ────────► │ gas_garch_estimator  │
-│  taq_cleaner,   │           │  - compute returns │           │ func_garch_estimator │
-│  nbbo/dynamic_  │           │  - reshape to      │           │                      │
+│ (data_fetcher,  │ ────────► │  - align to grid   │ ────────► │ gas_estimator        │
+│  taq_cleaner,   │           │  - compute returns │           │ bspline_garch_       │
+│  nbbo/dynamic_  │           │  - reshape to      │           │  estimator           │
 │  taq_minute,    │           │    (N, T) matrix   │           │  -> vtheta_hat,      │
 │  export)        │           │                    │           │     sigma2 surface   │
 └────────────────┘            └───────────────────┘           └─────────────────────┘

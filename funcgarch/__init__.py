@@ -8,16 +8,16 @@ Basis functions:
     ou_kernel             Ornstein-Uhlenbeck covariance kernel.
 
 Functional GARCH:
-    delta                 Level operator (Bernstein expansion of δ).
-    kernel_operator       Kernel operator (double Bernstein sum for α/β).
-    loss_func             Bernstein-projected MSE loss.
-    garch_filter          Extract conditional variance surface from returns.
-    garch_estimator       Compute loss for a given parameter vector.
-    fit                   Estimate parameters via scipy.minimize.
+    delta                    Level operator (Bernstein expansion of δ).
+    kernel_operator          Kernel operator (double Bernstein sum for α/β).
+    loss_func                Bernstein-projected MSE loss.
+    garch_filter             Extract conditional variance surface from returns.
+    garch_estimator          Compute loss for a given parameter vector.
+    fit                      Estimate parameters via scipy.minimize.
+    bspline_garch_estimator  Functional GARCH via B-spline coefficient recursion.
 
-Functional GAS-GARCH:
-    gas_garch_estimator   Score-driven estimator (Student-t likelihood).
-    func_garch_estimator  Functional GARCH via B-spline coefficient recursion.
+Functional GAS:
+    gas_estimator            Score-driven estimator (Student-t likelihood).
 
 Simulation:
     brownian              Scaled Brownian motion on [0, 1].
@@ -35,8 +35,9 @@ from .garch import (
     garch_filter,
     garch_estimator,
     fit,
+    bspline_garch_estimator,
 )
-from .gas import gas_garch_estimator, func_garch_estimator
+from .gas import gas_estimator
 from .simulate import brownian, simulate
 from .utils import ResultContainer
 
@@ -50,8 +51,8 @@ __all__ = [
     'garch_filter',
     'garch_estimator',
     'fit',
-    'gas_garch_estimator',
-    'func_garch_estimator',
+    'bspline_garch_estimator',
+    'gas_estimator',
     'brownian',
     'simulate',
     'ResultContainer',
