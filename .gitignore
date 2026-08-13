@@ -42,5 +42,22 @@ data/*.h5
 data/*.hdf5
 data/*.pkl
 
+# Test / tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Generated figure variants (regenerate via scripts/*.py) — not committed
+garch_surface_bare.png
+garch_vol_surface_no_title.png
+garch_vol_surface_no_title_no_subtitle.png
+gas_surface_bare.png
+gas_vol_surface_container_no_title.png
+gas_vol_surface_container_no_title_no_subtitle.png
+
+# Personal reference PDFs dropped in repo root (not redistributed;
+# see references/ for how to store any paper actually meant to ship)
+/*.pdf
+
 # CLAUDE agent instructions (local-only)
 CLAUDE.md
