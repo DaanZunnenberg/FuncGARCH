@@ -7,8 +7,19 @@ name = "funcgarch"
 version = "1.1.4"
 description = "Functional GARCH and GAS-GARCH models for intraday volatility"
 readme = "README.md"
+license = "Apache-2.0"
 authors = [{name = "Daan Zunnenberg", email = "dw.zunnenberg@gmail.com"}]
 requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
 dependencies = [
     "numpy>=1.24",
     "scipy>=1.10",
@@ -17,6 +28,9 @@ dependencies = [
     "matplotlib>=3.7",
     "tqdm>=4.65",
 ]
+
+[project.urls]
+Repository = "https://github.com/DaanZunnenberg/FunctionalScale"
 
 [project.optional-dependencies]
 dev = ["pytest>=7", "jupyter"]
