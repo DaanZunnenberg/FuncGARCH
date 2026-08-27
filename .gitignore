@@ -61,3 +61,6 @@ gas_vol_surface_container_no_title_no_subtitle.png
 
 # CLAUDE agent instructions (local-only)
 CLAUDE.md
+
+# Local Claude Code agent config (not meant to be shared/committed)
+.claude/
