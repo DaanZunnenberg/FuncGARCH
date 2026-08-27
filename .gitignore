@@ -64,3 +64,7 @@ CLAUDE.md
 
 # Local Claude Code agent config (not meant to be shared/committed)
 .claude/
+
+# MATLAB autosave / compiled artifacts
+*.asv
+*.mex*
