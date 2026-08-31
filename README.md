@@ -157,3 +157,7 @@ consumes an `(N, T)` return matrix. The `data/taq_cleaner.py` pipeline depends o
 ---
 
 ## Repository Layout
+
+---
+
+_Last reviewed: 2026-08-31._
