@@ -1,6 +1,6 @@
 # FunctionalScale
 
-Research code for **functional GARCH** and **functional GAS** models applied to intraday volatility surfaces. The models treat within-day return curves as functional observations, extending classical GARCH/GAS dynamics to function space ($L^2[0,1]$).
+Research code for **functional GARCH** and **functional GAS** models applied to intraday volatility surfaces. The models treat within-day return curves as functional observations, extending classical GARCH and GAS dynamics to function space ($L^2[0,1]$).
 
 ---
 
